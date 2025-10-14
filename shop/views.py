@@ -1,7 +1,8 @@
 import json
 from django.shortcuts import render
 
-from .models import *
+from .models import CommandeArticle, Commande, Produit
+from django.contrib.auth.decorators import login_required
 
 from django.http import JsonResponse
 
@@ -46,9 +47,28 @@ def commande(request, *args, **kwargs):
 
     return render(request, "commande.html", context)
 
+@login_required()
 def update_article(request, *args, **kwargs):
     data = json.loads(request.body)
-    Produit_id = data["produit_id"]
+    produit_id = data["produit_id"]
     action = data["action"]
-#    print(action, Produit_id,data)
-    return JsonResponse("Produit modifié", safe=False)
+    produit	=	Produit.objects.get(id=produit_id)
+    client = request.user.client
+    commande, created = Commande.objects.get_or_create(client=client, complete=False)
+    commande_article, created = CommandeArticle.objects.get_or_create(commande=commande, produit = produit)
+    
+    if commande_article.quantite is None:
+            commande_article.quantite = 0
+    if action == "add":
+        commande_article.quantite += 1
+    elif action == "remove":
+        commande_article -= 1
+
+    
+
+    commande_article.save()
+
+    if commande_article.quantite <= 0:
+        commande_article.delete()
+
+    return JsonResponse("Panier modifié", safe=False)

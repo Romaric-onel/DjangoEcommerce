@@ -1,3 +1,6 @@
+console.log("panier.js chargé");
+
+
 var produitBtns = document.getElementsByClassName('update-panier');
 
 for (var i = 0; i < produitBtns.length; i++){

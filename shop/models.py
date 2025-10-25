@@ -119,6 +119,14 @@ class Commande(models.Model):
         total = sum(article.quantite for article in articles)
         return total
 
+    @property
+    def produit_physique(self):
+        articles = self.commandearticle_set.all()  # type: ignore
+        au_moins_un_produit_physique = any(article.produit.digital == False for article in articles)
+        return au_moins_un_produit_physique
+
+    
+
     class Meta:
         verbose_name = _("Order")
         verbose_name_plural = _("Orders")

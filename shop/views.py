@@ -1,10 +1,11 @@
+from datetime import datetime
 import json
 
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.shortcuts import render
 
-from .models import Commande, CommandeArticle, Produit
+from .models import AddressChipping, Commande, CommandeArticle, Produit
 
 
 # Create your views here.
@@ -96,3 +97,30 @@ def update_article(request, *args, **kwargs):
         commande_article.delete()
 
     return JsonResponse("Panier modifié", safe=False)
+
+
+def traitement_commande(request, *args, **kwargs):
+    transaction_id = datetime.now().timestamp()
+    data = json.loads(request.body)
+    if request.user.is_authenticated:
+        client = request.user.client
+        commande, created = Commande.objects.get_or_create(
+            client=client, complete=False
+        )
+        total = float(data["form"]["total"])
+        commande.transaction_id = transaction_id #type: ignore
+        if commande.get_panier_total == total:
+            commande.complete = True
+        commande.save()
+        if commande.produit_physique:
+            AddressChipping.objects.create(
+                client=client,
+                commande=commande,
+                addresse=data["shipping"]["address"],
+                ville=data["shipping"]["city"],
+                zipcode=data["shipping"]["zipcode"],
+            )
+
+    else:
+        print("utilisateur	non	authentifie")
+    return JsonResponse("Traitement	complete!", safe=False)
